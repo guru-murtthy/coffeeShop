@@ -11,10 +11,7 @@ const FAQContainer = styled.div`
   box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
   border-radius: 12px;
   transition: all 0.3s ease-in-out;
-  &:hover {
-    transform: scale(1.02);
-    box-shadow: 6px 6px 20px rgba(0, 0, 0, 0.3);
-  }
+
 `;
 
 const FAQHeading = styled(motion.h1)`

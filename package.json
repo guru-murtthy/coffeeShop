@@ -29,6 +29,8 @@
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/user-event": "^13.5.0",
+    "ajv": "^8.17.1",
+    "ajv-keywords": "^5.1.0",
     "axios": "^1.6.2",
     "babel-plugin-styled-components": "^2.1.4",
     "connect-mongo": "^5.1.0",

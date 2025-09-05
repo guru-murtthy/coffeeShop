@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
-import Button from '../componets/Button';
+import { useState } from 'react';
+import styled from 'styled-components';
 import '../App.css';
+import Button from '../componets/Button';
 const ContactContainer = styled.div`
   padding: 4rem 2rem;
   max-width: 800px;
@@ -65,7 +66,7 @@ const TextArea = styled.textarea`
     outline: none;
     }
 `;
-const ModalBackdrop=styled.div`
+const ModalBackdrop = styled.div`
   position:fixed;
   cursor:inherit;
   top:0;
@@ -78,7 +79,7 @@ const ModalBackdrop=styled.div`
   align-items:center;
   z-index:999;
 `;
-const ModalBox=styled.div`
+const ModalBox = styled.div`
 z-index: 1000;
   cursor:pointer;
   background:#fff;
@@ -97,7 +98,7 @@ function Contact() {
     email: '',
     message: '',
   });
-  
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -107,81 +108,100 @@ function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend
-    console.log('Form submitted:', formData);
-    // Reset form after submission
-    setFormData({ name: '', email: '', message: '' });
-    setShowModal(true);
+
+    // Use environment variables from process.env
+    const SERVICE_ID = process.env.REACT_APP_EMAILJS_SERVICE_ID;
+    const TEMPLATE_ID = process.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+    const USER_ID = process.env.REACT_APP_EMAILJS_USER_ID;
+
+    // Send the email using EmailJS
+    emailjs.send(
+      SERVICE_ID,
+      TEMPLATE_ID,
+      {
+        from_name: formData.name,
+        from_email: formData.email,
+        message: formData.message,
+      },
+      USER_ID
+    )
+      .then(() => {
+        setShowModal(true);
+        setFormData({ name: '', email: '', message: '' });
+      })
+      .catch((error) => {
+        alert('Failed to send message, please try again:', error.text);
+      });
   };
 
   return (
     <div className='page-container'>
-    {
-      showModal && (
-        <ModalBackdrop onClick={()=>setShowModal(false)}>
-          <ModalBox onClick={(e) => e.stopPropagation()}>
-            <h2 style={{marginBottom: "1rem", color: "#7c2214" }}>Your response has been submitted!</h2>
-            <Button onClick={()=>setShowModal(false)} style={{ cursor: 'pointer' }}>Close</Button>
-          </ModalBox>
-        </ModalBackdrop>
-      )
-    }
-    <ContactContainer>
-      <Title
-        className = "mt-7"
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        style={{ fontWeight: 'bold' }}
-      >
-        Contact Us
-      </Title>
-      <Title
-        className = "mt-1"
-        initial={{ opacity: 0, y: -20}}
-        animate={{ opacity: 1, y: 2 }}
-        transition={{ duration: 0.5 }}
-        style={{ fontSize: "24px" }} 
-      >
-        We would love to hear from you!
-      </Title>
-      <Form
-        onSubmit={handleSubmit}
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <div style={{ display: 'flex',justifyContent:'space-between',gap:'10px' }}>
-        <Input
-          type="text"
-          name="name"
-          placeholder="Your Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          pattern="[a-zA-Z\s]+" title="Name must only contain letters"
-          style={{ width: '50%' }}
-        />
-        <Input
-          type="email"
-          name="email"
-          placeholder="Your Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          style={{ width: '50%' }}
-        />
-        </div>
-        <TextArea
-          name="message"
-          placeholder="Your Message"
-          value={formData.message}
-          onChange={handleChange}
-          required
-        />
-        <Button primary type="submit">Send Message</Button>
-      </Form>
-    </ContactContainer>
+      {
+        showModal && (
+          <ModalBackdrop onClick={() => setShowModal(false)}>
+            <ModalBox onClick={(e) => e.stopPropagation()}>
+              <h2 style={{ marginBottom: "1rem", color: "#7c2214" }}>Your response has been submitted!</h2>
+              <Button onClick={() => setShowModal(false)} style={{ cursor: 'pointer' }}>Close</Button>
+            </ModalBox>
+          </ModalBackdrop>
+        )
+      }
+      <ContactContainer>
+        <Title
+          className="mt-7"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          style={{ fontWeight: 'bold' }}
+        >
+          Contact Us
+        </Title>
+        <Title
+          className="mt-1"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 2 }}
+          transition={{ duration: 0.5 }}
+          style={{ fontSize: "24px" }}
+        >
+          We would love to hear from you!
+        </Title>
+        <Form
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+            <Input
+              type="text"
+              name="name"
+              placeholder="Your Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              pattern="[a-zA-Z\s]+" title="Name must only contain letters"
+              style={{ width: '50%' }}
+            />
+            <Input
+              type="email"
+              name="email"
+              placeholder="Your Email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              style={{ width: '50%' }}
+            />
+          </div>
+          <TextArea
+            name="message"
+            placeholder="Your Message"
+            value={formData.message}
+            onChange={handleChange}
+            required
+          />
+          <Button primary type="submit">Send Message</Button>
+        </Form>
+      </ContactContainer>
     </div>
   );
 }

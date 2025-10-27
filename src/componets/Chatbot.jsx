@@ -1,7 +1,7 @@
 // src/components/Chatbot.jsx
 import React, { useState, useRef, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import { FiCoffee, FiX } from "react-icons/fi";
+import { FiCoffee, FiX, FiMic, FiMicOff } from "react-icons/fi";
 import Fuse from "fuse.js";
 
 // Animations
@@ -89,7 +89,6 @@ const Messages = styled.div`
   flex-direction: column;
 `;
 
-// Chat bubbles
 const MessageBubble = styled.div`
   max-width: 80%;
   padding: 8px 12px;
@@ -113,6 +112,7 @@ const Typing = styled.div`
 const InputSection = styled.div`
   display: flex;
   border-top: 1px solid rgba(255, 255, 255, 0.3);
+  align-items: center;
 `;
 
 const Input = styled.input`
@@ -136,6 +136,16 @@ const SendButton = styled.button`
   }
 `;
 
+const MicButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${(props) => (props.isListening ? "#d32f2f" : "#7c4a21")};
+  font-size: 20px;
+  margin: 0 5px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+`;
+
 const QuickButton = styled.button`
   background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(124, 74, 33, 0.5);
@@ -150,43 +160,33 @@ const QuickButton = styled.button`
   }
 `;
 
-// FAQ + Extra Questions
+// FAQ Answers
 const faqAnswers = [
-    { keywords: ["place an order", "order", "how do i place an order", "how to place an order"], 
+  { keywords: ["place an order", "order", "how do i place an order", "how to place an order"], 
     answer: "To place an order, browse our collection and click 'Add to Cart'. When you're ready, proceed to checkout." },
   { keywords: ["payment methods", "payment options", "how do i pay", "what payment methods do you accept"], 
     answer: "We accept credit cards, PayPal, and bank transfers for your convenience." },
-
-  { keywords: ["place an order", "order", "how to order"], answer: "To place an order, browse our collection and click 'Add to Cart'. When you're ready, proceed to checkout." },
   { keywords: ["modify my order", "change order", "edit order"], answer: "Once an order is placed, it cannot be modified. However, you can cancel it and place a new one if needed." },
-  { keywords: ["payment methods", "payment options", "pay", "how to pay"], answer: "We accept credit cards, PayPal, and bank transfers for your convenience." },
   { keywords: ["track my order", "track order", "tracking"], answer: "Once your order ships, you’ll receive a tracking number via email to monitor your shipment." },
   { keywords: ["recommend", "best coffee", "suggest", "what to drink"], answer: "Our most-loved drinks: Caramel Cold Brew, Mocha Latte, and Premium Beans Cappuccino." },
   { keywords: ["open", "hours", "timing", "closing"], answer: "We’re open every day from 8AM to 10PM." },
   { keywords: ["cancel", "refund", "return"], answer: "You can cancel before shipment for a full refund. Contact our support team for assistance." },
-  // Extra FAQs (with full phrases)
   { keywords: ["coffee made of", "what is your coffee made of"], answer: "We use only the finest organic coffee beans sourced ethically from sustainable farms." },
-  { keywords: ["vegan", "plant-based", "vegan options", "do you offer vegan options"], answer: "Yes! We have a range of plant-based milks and vegan pastries available." },
-  { keywords: ["wifi", "internet", "do you have free wifi"], answer: "Yes, we offer free high-speed Wi-Fi to all our customers." },
+  { keywords: ["vegan", "plant-based", "vegan options"], answer: "Yes! We have a range of plant-based milks and vegan pastries available." },
+  { keywords: ["wifi", "internet"], answer: "Yes, we offer free high-speed Wi-Fi to all our customers." },
   { keywords: ["outdoor seating", "outside"], answer: "Yes, we have a cozy outdoor seating area for customers to enjoy their coffee." },
-  { keywords: ["pets", "dogs", "pet-friendly", "are pets allowed"], answer: "Yes! We’re a pet-friendly café, and we even offer special treats for dogs." },
-  { keywords: ["gift card", "voucher", "do you provide gift cards"], answer: "Yes, we have gift cards available in-store and online." },
-  { keywords: ["events", "workshops", "do you host events"], answer: "We regularly host coffee-tasting events and barista workshops." },
-  { keywords: ["loyalty program", "rewards", "do you have a loyalty program"], answer: "Yes, join our rewards program and earn points for every purchase." },
+  { keywords: ["pets", "dogs", "pet-friendly"], answer: "Yes! We’re a pet-friendly café, and we even offer special treats for dogs." },
+  { keywords: ["gift card", "voucher"], answer: "Yes, we have gift cards available in-store and online." },
+  { keywords: ["events", "workshops"], answer: "We regularly host coffee-tasting events and barista workshops." },
+  { keywords: ["loyalty program", "rewards"], answer: "Yes, join our rewards program and earn points for every purchase." },
 ];
 
-// Fuse.js config (now searches keywords & question)
-const fuse = new Fuse(faqAnswers, {
-  keys: ["keywords"],
-  threshold: 0.4,
-});
+const fuse = new Fuse(faqAnswers, { keys: ["keywords"], threshold: 0.4 });
 
-
-// Bot response generator
+// Get bot reply
 function getBotReply(question) {
   const q = question.toLowerCase();
-
-  if (["hi", "hello", "hey", "good morning", "good evening"].some(g => q.includes(g))) {
+  if (["hi", "hello", "hey", "good morning", "good evening"].some((g) => q.includes(g))) {
     return "Hello there! 👋 Welcome to MsCafe. How can I help? (Orders, payments, Wi-Fi, vegan, or coffee recs)";
   }
 
@@ -204,12 +204,39 @@ export default function Chatbot() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [suggestionsVisible, setSuggestionsVisible] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // Auto-scroll to bottom
+  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      handleSend(transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+  }, []);
+
+  
+  const speak = (text) => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    synth.speak(utterance);
+  };
 
   const handleSend = (text) => {
     if (!text.trim()) return;
@@ -222,7 +249,23 @@ export default function Chatbot() {
       setTyping(false);
       const reply = getBotReply(text);
       setMessages((prev) => [...prev, { from: "bot", text: reply }]);
+      speak(reply);
     }, 800);
+  };
+
+  const handleMicClick = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition not supported in your browser 😢");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setIsListening(true);
+      recognitionRef.current.start();
+    }
   };
 
   return (
@@ -233,6 +276,7 @@ export default function Chatbot() {
             MsCafe Chat
             <FiX style={{ cursor: "pointer" }} onClick={() => setOpen(false)} />
           </Header>
+
           <Messages>
             {messages.map((msg, i) => (
               <MessageBubble key={i} isUser={msg.from === "user"}>
@@ -241,17 +285,19 @@ export default function Chatbot() {
             ))}
             {typing && <Typing>typing</Typing>}
             <div ref={messagesEndRef} />
+
             {suggestionsVisible && (
               <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap" }}>
-<QuickButton onClick={() => handleSend("place an order")}>
-  How to Place an Order
-</QuickButton>
-<QuickButton onClick={() => handleSend("payment methods")}>
-  Payment Options
-</QuickButton>              </div>
+                <QuickButton onClick={() => handleSend("place an order")}>How to Place an Order</QuickButton>
+                <QuickButton onClick={() => handleSend("payment methods")}>Payment Options</QuickButton>
+              </div>
             )}
           </Messages>
+
           <InputSection>
+            <MicButton onClick={handleMicClick} isListening={isListening}>
+              {isListening ? <FiMicOff /> : <FiMic />}
+            </MicButton>
             <Input
               value={input}
               placeholder="Ask me anything..."

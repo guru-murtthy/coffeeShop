@@ -69,7 +69,7 @@ const NavItem = styled(motion.div)`
   position: relative;
   padding: 0.5rem 0;
 
-  a {
+  a,span {
     color: #e6d5b8;
     font-family: 'Poppins', sans-serif;
     font-weight: 500;

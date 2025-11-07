@@ -42,6 +42,7 @@ import Recipes from './Pages/Recipes';
 import RecipeDetail from './Pages/RecipeDetail';
 import Reviews from './componets/Reviews';
 import AnimatedCursor from 'react-animated-cursor';
+import ScrollProgressBar from "./componets/ScrollProgressBar";
 
 import Chatbot from "./componets/Chatbot";
 
@@ -112,6 +113,9 @@ const AppContent = () => {
         innerSize={20}
         outerSize={20}
         color="210, 105, 30"
+      />
+
+      <ScrollProgressBar
         outerAlpha={0.2}
         innerScale={0.7}
         outerScale={4}

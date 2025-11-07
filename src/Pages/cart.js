@@ -139,37 +139,81 @@ function Cart() {
   const CGST = totalPrice * 0.09;
   const finalPrice = totalPrice + SGST + CGST;
 
-  const handleProceedToPayment = () => {
-    toast.info("Redirecting to payment...", { autoClose: 1500 });
-    navigate("/checkOut");
+
+  //added by me RazorPAy integration
+  const handleProceedToPayment = async () => {
+    if (cartItems.length === 0) {
+      toast.warn("Your cart is empty!");
+      return;
+    }
+
+    try {
+      // 🔹 Convert finalPrice to paise (Razorpay works in smallest currency unit)
+      const amountInPaise = Math.round(finalPrice * 100);
+
+      // 🚨 Ideally, you should create an order from your backend.
+      // For testing/demo, we can skip that and pass amount directly.
+      const options = {
+        key: "rzp_test_R9SFhSGjCTIxOy", // 👉 get from Razorpay Dashboard
+        amount: amountInPaise,
+        currency: "INR",
+        name: "Coffee Shop",
+        description: "Order Payment",
+        image: "/logo.png", // optional, add your logo here
+        handler: function (response) {
+          toast.success("Payment Successful ✅");
+          console.log("Payment ID:", response.razorpay_payment_id);
+          console.log("Order ID:", response.razorpay_order_id);
+          console.log("Signature:", response.razorpay_signature);
+
+          // 👉 You can clear cart after success
+          dispatch(clearCart());
+          navigate("/");
+        },
+        prefill: {
+          name: "user", // You can also take user input
+          email: "user1@example.com",
+          contact: "9876543210",
+        },
+        theme: {
+          color: "#7c2214",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error(error);
+      toast.error("Payment failed ❌");
+    }
   };
 
   return (
     <CartContainer>
       <h1>Your Cart</h1>
       <RemoveButton
-  whileHover={{ scale: cartItems.length > 0 ? 1.05 : 1 }}
-  whileTap={{ scale: cartItems.length > 0 ? 0.95 : 1 }}
-  onClick={() => {
-    if (cartItems.length === 0) return;
-    const confirmClear = window.confirm(
-      "Are you sure you want to remove all items from the cart?"
-    );
-    if (confirmClear) {
-      dispatch(clearCart());
-      toast.info("All items removed from cart!");
-    }
-  }}
-  disabled={cartItems.length === 0}
-  style={{
-    marginBottom: "1rem",
-    backgroundColor: cartItems.length === 0 ? "#ccc" : "#7c2214",
-    color: cartItems.length === 0 ? "#666" : "#fff",
-    cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-  }}
->
-  Clear Cart
-</RemoveButton>
+        whileHover={{ scale: cartItems.length > 0 ? 1.05 : 1 }}
+        whileTap={{ scale: cartItems.length > 0 ? 0.95 : 1 }}
+        onClick={() => {
+          if (cartItems.length === 0) return;
+          const confirmClear = window.confirm(
+            "Are you sure you want to remove all items from the cart?"
+          );
+          if (confirmClear) {
+            dispatch(clearCart());
+            toast.info("All items removed from cart!");
+          }
+        }}
+        disabled={cartItems.length === 0}
+        style={{
+          marginBottom: "1rem",
+          backgroundColor: cartItems.length === 0 ? "#ccc" : "#7c2214",
+          color: cartItems.length === 0 ? "#666" : "#fff",
+          cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+        }}
+      >
+        Clear Cart
+      </RemoveButton>
 
       {cartItems.length === 0 ? (
         <p>Your cart is empty. Please add some items!</p>
